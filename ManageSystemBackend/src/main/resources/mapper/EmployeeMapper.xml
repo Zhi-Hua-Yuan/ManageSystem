@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spt.managesystem.mapper.EmployeeMapper">
+
+    <resultMap id="BaseResultMap" type="com.spt.managesystem.model.Employee">
+            <id property="employeeId" column="employee_id" />
+            <result property="employeeName" column="employee_name" />
+            <result property="employeeAccount" column="employee_account" />
+            <result property="employeePassword" column="employee_password" />
+            <result property="gender" column="gender" />
+            <result property="phone" column="phone" />
+            <result property="email" column="email" />
+            <result property="birthday" column="birthday" />
+            <result property="departmentId" column="department_id" />
+            <result property="job" column="job" />
+            <result property="salary" column="salary" />
+            <result property="employeeRole" column="employee_role" />
+            <result property="isDelete" column="is_delete" />
+            <result property="createTime" column="create_time" />
+            <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        employee_id,employee_name,employee_account,employee_password,gender,phone,
+        email,birthday,department_id,job,salary,
+        employee_role,is_delete,create_time,update_time
+    </sql>
+</mapper>
