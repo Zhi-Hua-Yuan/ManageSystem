@@ -1,13 +1,15 @@
 package com.spt.managesystem.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import lombok.Data;
 
 /**
  * 员工表
+ * @author songpintong
  * @TableName employee
  */
 @TableName(value ="employee")
@@ -58,6 +60,7 @@ public class Employee {
     /**
      * 员工出生日期
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @TableField(value = "birthday")
     private Date birthday;
 
@@ -76,6 +79,7 @@ public class Employee {
     /**
      * 工资
      */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     @TableField(value = "salary")
     private BigDecimal salary;
 
@@ -93,14 +97,16 @@ public class Employee {
     private Integer isDelete;
 
     /**
-     * 创建时间
+     * 入职时间(创建时间)
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @TableField(value = "create_time")
     private Date createTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @TableField(value = "update_time")
     private Date updateTime;
 }

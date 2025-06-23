@@ -1,19 +1,27 @@
 package com.spt.managesystem.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spt.managesystem.common.BaseResponse;
+import com.spt.managesystem.common.ErrorCode;
+import com.spt.managesystem.common.ResultUtils;
+import com.spt.managesystem.exception.BusinessException;
 import com.spt.managesystem.mapper.EmployeeMapper;
 import com.spt.managesystem.model.Employee;
 import com.spt.managesystem.service.EmployeeService;
+import org.apache.commons.lang3.StringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static com.spt.managesystem.common.ErrorCode.PARAMS_ERROR;
 import static com.spt.managesystem.constant.EmployeeConstant.*;
 
 /**
@@ -35,53 +43,66 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
      * 员工登录
      */
     @Override
-    public BaseResponse<Employee> employeeLogin(Integer employeeId, String account, String password, HttpServletRequest request) {
-        // 1. 构造查询条件：优先使用 employeeId，account 查询用户
+    public Employee employeeLogin(Integer employeeId, String account, String password, HttpServletRequest request) {
+        // 1.校验账号和密码
+        // 账号不小于4位，密码不小于8位
+        if (account.length() < 4) {
+            throw new BusinessException(PARAMS_ERROR, "账号长度应不小于4位");
+        }
+        if (password.length() < 8) {
+            throw new BusinessException(PARAMS_ERROR, "密码长度应不小于8位");
+        }
+        // 2. 构造查询条件：优先使用 employeeId，account 查询用户
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("employee_id", employeeId);
         queryWrapper.eq("employee_account", account);
 
-        // 2. 查询员工信息
+        // 3. 查询员工信息
         Employee employee = this.getOne(queryWrapper);
         if (employee == null) {
-            return BaseResponse.error(-1, "用户不存在");
+            throw new BusinessException(PARAMS_ERROR, "用户不存在");
         }
-        // 3. 使用 BCrypt 校验密码是否正确
+        // 4. 使用 BCrypt 校验密码是否正确
         if (!BCrypt.checkpw(password, employee.getEmployeePassword())) {
-            return BaseResponse.error(-2, "密码错误");
+            throw new BusinessException(PARAMS_ERROR, "密码错误");
         }
-
-        // 4. 员工脱敏
+        // 5. 员工脱敏
         Employee safetyEmployee = getSafetyEmployee(employee);
-        // 5. 记录员工的登录态
+        // 6. 记录员工的登录态
         request.getSession().setAttribute(EMPLOYEE_LOGIN_STATE, safetyEmployee);
-        return BaseResponse.success(safetyEmployee);
+        return safetyEmployee;
+    }
+
+    @Override
+    public int employeeLogout(HttpServletRequest request) {
+        // 移除登录态
+        request.getSession().removeAttribute(EMPLOYEE_LOGIN_STATE);
+        return 1;
     }
 
     /**
      * 注册
      */
     @Override
-    public BaseResponse<Integer> employeeRegister(String account, String password, String checkPassword) {
+    public long employeeRegister(String account, String password, String checkPassword) {
         // 1.校验账号和密码
         // 账号不小于4位，密码不小于8位
         if (account.length() < 4) {
-            return BaseResponse.error(-3, "账号长度应不小于4位");
+            throw new BusinessException(PARAMS_ERROR, "账号长度应不小于4位");
         }
-        if (password.length() < 8) {
-            return BaseResponse.error(-4, "密码长度应不小于8位");
-
+        if (password.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(PARAMS_ERROR, "密码长度应不小于8位");
         }
         // 密码和确认密码一致
         if (!password.equals(checkPassword)) {
-            return BaseResponse.error(-5, "密码和确认密码不一致");
+            throw new BusinessException(PARAMS_ERROR, "密码不一致");
         }
         // 账号不能重复
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("employee_account", account);
         Long l = employeeMapper.selectCount(queryWrapper);
         if (l > 0) {
-            return BaseResponse.error(-6, "已存在相同账号");
+            throw new BusinessException(PARAMS_ERROR, "账号已存在");
         }
         // 2.使用 BCrypt 加密
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
@@ -94,67 +115,23 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
         // 4.返回注册结果
         if (!saveResult) {
-            return BaseResponse.error(-7, "注册失败");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据插入失败");
         }
-        return BaseResponse.success(employee.getEmployeeId());
-    }
-
-    /**
-     * 更新员工信息
-     */
-    @Override
-    public BaseResponse<Integer> updateEmployee(Employee newEmployee, Employee oldEmployee) {
-        // 鉴权
-        // 如果是管理员，可以修改所有人的信息
-        Integer employeeRole = oldEmployee.getEmployeeRole();
-        if (employeeRole == ADMIN_ROLE) {
-            // 执行更新操作
-            boolean updateResult = this.updateById(newEmployee);
-            return updateResult ? BaseResponse.success(1) : BaseResponse.error(-9, "更新失败");
-        }
-        // 如果是部门经理，可以修改自己部门员工的信息
-        else if (employeeRole == MANAGE_ROLE) {
-            // 只能修改同部门员工的信息
-            if (newEmployee.getDepartmentId().equals(oldEmployee.getDepartmentId())) {
-                // 执行更新操作
-                boolean updateResult = this.updateById(newEmployee);
-                return updateResult ? BaseResponse.success(1) : BaseResponse.error(-9, "更新失败");
-            } else {
-                return BaseResponse.error(-10, "无权限修改其他部门员工信息");
-            }
-        }
-        // 如果是普通员工，可以修改自己的信息
-        else if (employeeRole == DEFAULT_ROLE) {
-            // 只能修改自己的信息
-            if (newEmployee.getEmployeeId().equals(oldEmployee.getEmployeeId())) {
-                // 执行更新操作
-                boolean updateResult = this.updateById(newEmployee);
-                return updateResult ? BaseResponse.success(1) : BaseResponse.error(-9, "更新失败");
-            } else {
-                return BaseResponse.error(-11, "无权限修改他人信息");
-            }
-        } else {
-            return BaseResponse.error(-12, "没有操作权限");
-        }
+        return employee.getEmployeeId();
     }
 
     /**
      * 分页查询用户信息
      */
     @Override
-    public BaseResponse<List<Employee>> searchEmployees(int pageNum, int pageSize, Employee employee) {
+    public List<Employee> searchEmployees(int pageNum, int pageSize, Employee employee) {
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
-        // 系统管理员可以查询所有员工信息
-        // 部门经理只能查询本部门的员工信息
-        // 普通员工不能查询
-        if (employee.getEmployeeRole() == MANAGE_ROLE) {
-            queryWrapper.eq("department_id", employee.getDepartmentId());
-        } else if (employee.getEmployeeRole() == DEFAULT_ROLE) {
-            return BaseResponse.error(-13, "没有操作权限");
-        }
         Page<Employee> employeePage = page(new Page<>(pageNum, pageSize), queryWrapper);
-        return BaseResponse.success(employeePage.getRecords());
+
+        List<Employee> records = employeePage.getRecords();
+        return records.stream().map(this::getSafetyEmployee).collect(Collectors.toList());
     }
+
 
     /**
      * 员工信息脱敏
@@ -188,8 +165,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
      */
     @Override
     public boolean isAdmin(HttpServletRequest request) {
-        Employee employee = (Employee) request.getSession().getAttribute(EMPLOYEE_LOGIN_STATE);
-        return employee != null && employee.getEmployeeRole() == 0;
+        Employee employee = getLoginEmployee(request);
+        return employee != null && employee.getEmployeeRole() == ADMIN_ROLE;
     }
 
     /**
@@ -197,10 +174,17 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
      */
     @Override
     public boolean isManager(HttpServletRequest request) {
-        Employee employee = (Employee) request.getSession().getAttribute(EMPLOYEE_LOGIN_STATE);
-        return employee != null && employee.getEmployeeRole() == 1;
+        Employee employee = getLoginEmployee(request);
+        return employee != null && employee.getEmployeeRole() == MANAGE_ROLE;
     }
 
+    /**
+     * 获取当前登录用户
+     */
+    @Override
+    public Employee getLoginEmployee(HttpServletRequest request) {
+        return (Employee) request.getSession().getAttribute(EMPLOYEE_LOGIN_STATE);
+    }
 
 }
 

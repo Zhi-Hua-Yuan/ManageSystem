@@ -12,12 +12,12 @@ public class EmployeeRegisterRequest {
     /**
      * 员工账号
      */
-    String account;
+    String employeeAccount;
 
     /**
      * 员工密码
      */
-    String password;
+    String employeePassword;
 
     /**
      * 二次密码

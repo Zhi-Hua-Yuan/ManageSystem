@@ -1,6 +1,7 @@
 package com.spt.managesystem.common;
 
 import lombok.Data;
+
 /**
  * @author songpintong
  * 通用返回类
@@ -9,7 +10,6 @@ import lombok.Data;
 public class BaseResponse<T> {
     /**
      * 状态码
-     * 200 表示成功，其他为失败
      */
     private int code;
 
@@ -28,18 +28,22 @@ public class BaseResponse<T> {
      */
     private String description;
 
-    public static <T> BaseResponse<T> success(T data) {
-        BaseResponse<T> result = new BaseResponse<>();
-        result.setCode(200);
-        result.setMessage("成功");
-        result.setData(data);
-        return result;
+    public BaseResponse(int code, T data, String message, String description) {
+        this.code = code;
+        this.data = data;
+        this.message = message;
+        this.description = description;
     }
 
-    public static <T> BaseResponse<T> error(int code, String message) {
-        BaseResponse<T> result = new BaseResponse<>();
-        result.setCode(code);
-        result.setMessage(message);
-        return result;
+    public BaseResponse(int code, T data, String message) {
+        this(code, data, message, "");
+    }
+
+    public BaseResponse(int code, T data) {
+        this(code, data, "", "");
+    }
+
+    public BaseResponse(ErrorCode errorCode) {
+        this(errorCode.getCode(), null, errorCode.getMessage(), errorCode.getDescription());
     }
 }
