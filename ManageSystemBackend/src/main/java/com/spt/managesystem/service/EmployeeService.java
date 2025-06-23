@@ -55,4 +55,8 @@ public interface EmployeeService extends IService<Employee> {
      */
     Employee getLoginEmployee(HttpServletRequest request);
 
+    /**
+     * 参数是否合法
+     */
+    boolean isValid(int employeeId,HttpServletRequest  request);
 }

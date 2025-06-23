@@ -202,11 +202,8 @@ public class EmployeeController {
      */
     @PostMapping("/delete/{employeeId}")
     public BaseResponse<Boolean> deleteEmployee(@PathVariable Integer employeeId, HttpServletRequest request) {
-        if (employeeId <= 0) {
-            throw new BusinessException(PARAMS_ERROR);
-        }
-        if (request == null) {
-            throw new BusinessException(NOT_LOGIN);
+        if (!employeeService.isValid(employeeId,request)){
+            return ResultUtils.success(false);
         }
         // 只有系统管理员和部门经理可以删除其他员工信息
         if (!employeeService.isAdmin(request) && !employeeService.isManager(request)) {
@@ -221,18 +218,15 @@ public class EmployeeController {
      */
     @PutMapping("/resetPassword/{employeeId}")
     public BaseResponse<Boolean> resetPassword(@PathVariable Integer employeeId, HttpServletRequest request) {
-        if (employeeId <= 0) {
-            throw new BusinessException(PARAMS_ERROR);
-        }
-        if (request == null) {
-            throw new BusinessException(NOT_LOGIN);
+        if (!employeeService.isValid(employeeId,request)){
+            return ResultUtils.success(false);
         }
         // 只有管理员和部门经理可以重置密码
         if (!employeeService.isAdmin(request) && !employeeService.isManager(request)) {
             throw new BusinessException(NO_AUTH);
         }
         Employee employee = employeeService.getById(employeeId);
-        // 用户不能已经删除
+        // 用户存在
         if (employee == null) {
             throw new BusinessException(NOT_FOUND);
         }

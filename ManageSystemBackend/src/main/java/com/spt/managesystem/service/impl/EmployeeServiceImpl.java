@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.spt.managesystem.common.ErrorCode.PARAMS_ERROR;
+import static com.spt.managesystem.common.ErrorCode.*;
 import static com.spt.managesystem.constant.EmployeeConstant.*;
 
 /**
@@ -115,7 +115,7 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
 
         // 4.返回注册结果
         if (!saveResult) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据插入失败");
+            throw new BusinessException(SYSTEM_ERROR, "数据插入失败");
         }
         return employee.getEmployeeId();
     }
@@ -184,6 +184,17 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
     @Override
     public Employee getLoginEmployee(HttpServletRequest request) {
         return (Employee) request.getSession().getAttribute(EMPLOYEE_LOGIN_STATE);
+    }
+
+    @Override
+    public boolean isValid(int employeeId, HttpServletRequest request) {
+        if (employeeId <= 0) {
+            throw new BusinessException(PARAMS_ERROR);
+        }
+        if (request == null) {
+            throw new BusinessException(NOT_LOGIN);
+        }
+        return true;
     }
 
 }

@@ -3,6 +3,9 @@ package com.spt.managesystem.model;
 import com.baomidou.mybatisplus.annotation.*;
 
 import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 /**
@@ -34,12 +37,20 @@ public class Department {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @TableField(value = "create_time")
     private Date createTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @TableField(value = "update_time")
     private Date updateTime;
+
+    /**
+     * 部门员工列表
+     */
+    @TableField(exist = false) // 表示该字段不在数据库中
+    private List<Employee> employees;
 }
