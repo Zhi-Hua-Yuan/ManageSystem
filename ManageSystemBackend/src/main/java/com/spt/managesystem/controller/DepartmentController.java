@@ -1,5 +1,6 @@
 package com.spt.managesystem.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.spt.managesystem.common.BaseResponse;
 import com.spt.managesystem.common.ResultUtils;
 import com.spt.managesystem.exception.BusinessException;
@@ -94,7 +95,7 @@ public class DepartmentController {
      * @return 查询结果
      */
     @GetMapping("/search")
-    public BaseResponse<List<Department>> searchDepartments(@RequestParam int pageNum,
+    public BaseResponse<Page<Department>> searchDepartments(@RequestParam int pageNum,
                                                             @RequestParam int pageSize,
                                                             @RequestParam(required = false) String departmentName,
                                                             HttpServletRequest request) {
@@ -103,8 +104,7 @@ public class DepartmentController {
         if (employee == null) {
             throw new BusinessException(NOT_LOGIN);
         }
-
-        List<Department> departments = departmentService.searchDepartments(pageNum, pageSize, departmentName);
+        Page<Department> departments = departmentService.searchDepartments(pageNum, pageSize, departmentName);
         return ResultUtils.success(departments);
     }
 

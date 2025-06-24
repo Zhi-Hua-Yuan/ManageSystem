@@ -75,14 +75,14 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
      * @return 查询结果
      */
     @Override
-    public List<Department> searchDepartments(int pageNum, int pageSize, String departmentName) {
+    public Page<Department> searchDepartments(int pageNum, int pageSize, String departmentName) {
         QueryWrapper<Department> queryWrapper = new QueryWrapper<>();
         if (StringUtils.isNotBlank(departmentName)) {
             queryWrapper.like("department_name", departmentName);
         }
 
         Page<Department> departmentPage = page(new Page<>(pageNum, pageSize), queryWrapper);
-        return departmentPage.getRecords();
+        return departmentPage;
     }
 
 

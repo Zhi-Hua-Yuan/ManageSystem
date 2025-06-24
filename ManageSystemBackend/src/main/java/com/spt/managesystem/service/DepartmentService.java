@@ -1,5 +1,6 @@
 package com.spt.managesystem.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.spt.managesystem.model.Department;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -34,7 +35,7 @@ public interface DepartmentService extends IService<Department> {
      * @param departmentName 部门名称（用于条件查询）
      * @return 查询结果
      */
-    List<Department> searchDepartments(int pageNum, int pageSize, String departmentName);
+    Page<Department> searchDepartments(int pageNum, int pageSize, String departmentName);
 
     /**
      * 获取部门详情（包括部门下的员工）

@@ -1,6 +1,7 @@
 package com.spt.managesystem.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.spt.managesystem.common.BaseResponse;
 import com.spt.managesystem.common.ErrorCode;
 import com.spt.managesystem.common.ResultUtils;
@@ -124,7 +125,7 @@ public class EmployeeController {
      * 分页查询用户信息
      */
     @GetMapping("/search")
-    public BaseResponse<List<Employee>> searchEmployees(Integer pageNum, Integer pageSize, HttpServletRequest request) {
+    public BaseResponse<Page<Employee>> searchEmployees(Integer pageNum, Integer pageSize, HttpServletRequest request) {
         Employee employee = employeeService.getLoginEmployee(request);
         if (employee == null) {
             throw new BusinessException(NOT_LOGIN);
@@ -133,8 +134,8 @@ public class EmployeeController {
         if (employee.getEmployeeRole() == DEFAULT_ROLE) {
             throw new BusinessException(NO_AUTH);
         }
-        List<Employee> employees = employeeService.searchEmployees(pageNum, pageSize, employee);
-        return ResultUtils.success(employees);
+        Page<Employee> page = employeeService.searchEmployees(pageNum, pageSize, employee);
+        return ResultUtils.success(page);
     }
 
     /**

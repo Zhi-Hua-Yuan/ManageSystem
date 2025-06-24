@@ -1,5 +1,6 @@
 package com.spt.managesystem.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.spt.managesystem.common.BaseResponse;
 import com.spt.managesystem.model.Employee;
@@ -38,7 +39,7 @@ public interface EmployeeService extends IService<Employee> {
     /**
      * 分页查询用户信息
      */
-    List<Employee> searchEmployees(int pageNum, int pageSize, Employee employee);
+    Page<Employee> searchEmployees(int pageNum, int pageSize, Employee employee);
 
     /**
      * 判断当前用户是否是管理员

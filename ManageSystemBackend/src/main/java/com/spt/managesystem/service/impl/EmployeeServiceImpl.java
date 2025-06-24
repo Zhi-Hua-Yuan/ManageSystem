@@ -124,12 +124,20 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
      * 分页查询用户信息
      */
     @Override
-    public List<Employee> searchEmployees(int pageNum, int pageSize, Employee employee) {
+    public Page<Employee> searchEmployees(int pageNum, int pageSize, Employee employee) {
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
         Page<Employee> employeePage = page(new Page<>(pageNum, pageSize), queryWrapper);
 
-        List<Employee> records = employeePage.getRecords();
-        return records.stream().map(this::getSafetyEmployee).collect(Collectors.toList());
+        // 对查询结果进行脱敏处理
+        List<Employee> safetyEmployees = employeePage.getRecords().stream()
+                .map(this::getSafetyEmployee)
+                .collect(Collectors.toList());
+
+        // 构造新的 Page 对象并设置脱敏后的数据
+        Page<Employee> resultPage = new Page<>(employeePage.getCurrent(), employeePage.getSize(), employeePage.getTotal());
+        resultPage.setRecords(safetyEmployees);
+
+        return resultPage;
     }
 
 
