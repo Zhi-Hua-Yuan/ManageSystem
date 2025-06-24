@@ -42,7 +42,7 @@ public class DepartmentController {
         if (!employeeService.isAdmin(request)) {
             throw new BusinessException(NO_AUTH);
         }
-        Integer result = departmentService.addDepartment(departmentName);
+        int result = departmentService.addDepartment(departmentName);
         return ResultUtils.success(result);
     }
 

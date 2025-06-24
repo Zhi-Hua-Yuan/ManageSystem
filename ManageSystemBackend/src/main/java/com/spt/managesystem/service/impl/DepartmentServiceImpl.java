@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.spt.managesystem.common.ErrorCode.NOT_FOUND;
 import static com.spt.managesystem.common.ErrorCode.SYSTEM_ERROR;
@@ -102,10 +103,14 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         List<Employee> employees = employeeService.list(new QueryWrapper<Employee>()
                 .eq("department_id", departmentId));
 
-        department.setEmployees(employees);
+        // 对每个员工进行脱敏处理
+        List<Employee> safetyEmployees = employees.stream()
+                .map(employee -> employeeService.getSafetyEmployee(employee))
+                .collect(Collectors.toList());
+
+        department.setEmployees(safetyEmployees);
         return department;
     }
-
 }
 
 
