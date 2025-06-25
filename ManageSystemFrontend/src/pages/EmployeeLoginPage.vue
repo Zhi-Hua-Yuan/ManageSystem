@@ -20,8 +20,8 @@ const router = useRouter();
 const handleSubmit = async (values: any) => {
   const res = await employeeLogin(values);
   console.log(res);
-  // 登录成功的状态码为200
-  if (res.data.code === 200 && res.data){
+  // 登录成功的状态码为0
+  if (res.data.code === 0 && res.data){
     // 登录成功后，跳转到首页
     await router.replace('/employee/home');
     console.log('登陆成功!');
