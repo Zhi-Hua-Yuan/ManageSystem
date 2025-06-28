@@ -4,8 +4,8 @@ create table employee
     employee_id       int auto_increment comment '员工工号'
         primary key,
     employee_name     varchar(64)                        null comment '员工姓名',
-    employee_account  varchar(64)                        not null comment '员工账号',
-    employee_password varchar(255)                       not null comment '员工密码',
+    employee_account  varchar(64)                        null comment '员工账号',
+    employee_password varchar(255)                       null comment '员工密码',
     gender            tinyint                            null comment '员工性别 0-男 1-女',
     phone             varchar(16)                        null comment '员工电话',
     email             varchar(32)                        null comment '员工邮箱号',
