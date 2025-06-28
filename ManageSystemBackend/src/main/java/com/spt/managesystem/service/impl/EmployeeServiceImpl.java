@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
@@ -33,17 +34,15 @@ import static com.spt.managesystem.constant.EmployeeConstant.*;
 public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
         implements EmployeeService {
 
-    private final EmployeeMapper employeeMapper;
+    @Resource
+    private EmployeeMapper employeeMapper;
 
-    public EmployeeServiceImpl(EmployeeMapper employeeMapper) {
-        this.employeeMapper = employeeMapper;
-    }
 
     /**
      * 员工登录
      */
     @Override
-    public Employee employeeLogin(Integer employeeId, String account, String password, HttpServletRequest request) {
+    public Employee employeeLogin(String account, String password, HttpServletRequest request) {
         // 1.校验账号和密码
         // 账号不小于4位，密码不小于8位
         if (account.length() < 4) {
@@ -52,9 +51,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
         if (password.length() < 8) {
             throw new BusinessException(PARAMS_ERROR, "密码长度应不小于8位");
         }
-        // 2. 构造查询条件：优先使用 employeeId，account 查询用户
+        // 2. 构造查询条件：优先使用account 查询用户
         QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("employee_id", employeeId);
         queryWrapper.eq("employee_account", account);
 
         // 3. 查询员工信息
@@ -83,41 +81,81 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
     /**
      * 注册
      */
+//    @Override
+//    public long employeeRegister(String account, String password, String checkPassword) {
+//        // 1.校验账号和密码
+//        // 账号不小于4位，密码不小于8位
+//        if (account.length() < 4) {
+//            throw new BusinessException(PARAMS_ERROR, "账号长度应不小于4位");
+//        }
+//        if (password.length() < 8 || checkPassword.length() < 8) {
+//            throw new BusinessException(PARAMS_ERROR, "密码长度应不小于8位");
+//        }
+//        // 密码和确认密码一致
+//        if (!password.equals(checkPassword)) {
+//            throw new BusinessException(PARAMS_ERROR, "密码不一致");
+//        }
+//        // 账号不能重复
+//        QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
+//        queryWrapper.eq("employee_account", account);
+//        Long l = employeeMapper.selectCount(queryWrapper);
+//        if (l > 0) {
+//            throw new BusinessException(PARAMS_ERROR, "账号已存在");
+//        }
+//        // 2.使用 BCrypt 加密
+//        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+//
+//        // 3.向数据库中插入数据
+//        Employee employee = new Employee();
+//        employee.setEmployeeAccount(account);
+//        employee.setEmployeePassword(hashedPassword);
+//        boolean saveResult = this.save(employee);
+//
+//        // 4.返回注册结果
+//        if (!saveResult) {
+//            throw new BusinessException(SYSTEM_ERROR, "数据插入失败");
+//        }
+//        return employee.getEmployeeId();
+//    }
+
+    /**
+     * 添加员工
+     */
     @Override
-    public long employeeRegister(String account, String password, String checkPassword) {
-        // 1.校验账号和密码
-        // 账号不小于4位，密码不小于8位
-        if (account.length() < 4) {
-            throw new BusinessException(PARAMS_ERROR, "账号长度应不小于4位");
+    public int addEmployee(Employee employee, HttpServletRequest request) {
+        // 权限校验：只有系统管理员和部门经理可以添加员工
+        if (!(isAdmin(request) || isManager(request))) {
+            throw new BusinessException(NO_AUTH, "无权限添加员工");
         }
-        if (password.length() < 8 || checkPassword.length() < 8) {
-            throw new BusinessException(PARAMS_ERROR, "密码长度应不小于8位");
+        // 1. 校验员工信息是否完整（可根据业务扩展）
+        if (employee == null) {
+            throw new BusinessException(NULL_ERROR, "员工信息为空");
         }
-        // 密码和确认密码一致
-        if (!password.equals(checkPassword)) {
-            throw new BusinessException(PARAMS_ERROR, "密码不一致");
-        }
-        // 账号不能重复
-        QueryWrapper<Employee> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("employee_account", account);
-        Long l = employeeMapper.selectCount(queryWrapper);
-        if (l > 0) {
-            throw new BusinessException(PARAMS_ERROR, "账号已存在");
-        }
-        // 2.使用 BCrypt 加密
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
-
-        // 3.向数据库中插入数据
-        Employee employee = new Employee();
-        employee.setEmployeeAccount(account);
-        employee.setEmployeePassword(hashedPassword);
+        // 2. 自动生成账号：EMP + 员工ID（先保存获取ID，再更新账号）
         boolean saveResult = this.save(employee);
-
-        // 4.返回注册结果
         if (!saveResult) {
             throw new BusinessException(SYSTEM_ERROR, "数据插入失败");
         }
-        return employee.getEmployeeId();
+
+        // 获取生成的主键 ID
+        Integer employeeId = employee.getEmployeeId();
+        // 构造账号 EMP + 员工ID
+        String defaultAccount = "EMP" + employeeId;
+        // 设置默认密码并加密
+        String defaultPassword = "12345678";
+        String hashedPassword = BCrypt.hashpw(defaultPassword, BCrypt.gensalt());
+        // 更新员工账号和密码
+        Employee updateEmployee = new Employee();
+        updateEmployee.setEmployeeId(employeeId);
+        updateEmployee.setEmployeeAccount(defaultAccount);
+        updateEmployee.setEmployeePassword(hashedPassword);
+
+        boolean updateResult = this.updateById(updateEmployee);
+        if (!updateResult) {
+            throw new BusinessException(SYSTEM_ERROR, "账号生成失败");
+        }
+
+        return employeeId;
     }
 
     /**

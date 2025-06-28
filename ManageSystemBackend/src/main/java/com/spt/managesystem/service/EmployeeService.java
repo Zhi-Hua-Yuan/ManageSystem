@@ -19,7 +19,7 @@ public interface EmployeeService extends IService<Employee> {
     /**
      * 登录
      */
-    Employee employeeLogin(Integer employeeId, String account, String password, HttpServletRequest request);
+    Employee employeeLogin(String account, String password, HttpServletRequest request);
 
     /**
      * 登出
@@ -29,7 +29,12 @@ public interface EmployeeService extends IService<Employee> {
     /**
      * 注册
      */
-    long employeeRegister(String account, String password, String checkPassword);
+//    long employeeRegister(String account, String password, String checkPassword);
+
+    /**
+     * 添加新员工
+     */
+    int addEmployee(Employee employee, HttpServletRequest request);
 
     /**
      * 员工信息脱敏
@@ -59,5 +64,5 @@ public interface EmployeeService extends IService<Employee> {
     /**
      * 参数是否合法
      */
-    boolean isValid(int employeeId,HttpServletRequest  request);
+    boolean isValid(int employeeId, HttpServletRequest request);
 }

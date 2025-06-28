@@ -8,10 +8,6 @@ import lombok.Data;
  */
 @Data
 public class EmployeeLoginRequest {
-    /**
-     * 员工工号
-     */
-    Integer employeeId;
 
     /**
      * 员工账号

@@ -41,16 +41,13 @@ public class EmployeeController {
         if (employeeLoginRequest == null) {
             throw new BusinessException(PARAMS_ERROR);
         }
-        Integer employeeId = employeeLoginRequest.getEmployeeId();
         String account = employeeLoginRequest.getEmployeeAccount();
         String password = employeeLoginRequest.getEmployeePassword();
-        if (employeeId == null || StringUtils.isAnyBlank(account, password)) {
+        if (StringUtils.isAnyBlank(account, password)) {
             throw new BusinessException(NULL_ERROR);
         }
-        if (employeeId <= 0) {
-            throw new BusinessException(PARAMS_ERROR);
-        }
-        Employee employee = employeeService.employeeLogin(employeeId, account, password, request);
+
+        Employee employee = employeeService.employeeLogin(account, password, request);
         return ResultUtils.success(employee);
     }
 
@@ -69,24 +66,35 @@ public class EmployeeController {
     /**
      * 注册
      */
-    @PostMapping("/register")
-    public BaseResponse<Long> employeeRegister(@RequestBody EmployeeRegisterRequest employeeRegisterRequest, HttpServletRequest request) {
-        if (employeeRegisterRequest == null) {
-            throw new BusinessException(PARAMS_ERROR);
-        }
-        // 鉴权: 只有系统管理员和部门经理可以注册新员工
-        // todo 上线时开启鉴权，测试我就先不开了
+//    @PostMapping("/register")
+//    public BaseResponse<Long> employeeRegister(@RequestBody EmployeeRegisterRequest employeeRegisterRequest, HttpServletRequest request) {
+//        if (employeeRegisterRequest == null) {
+//            throw new BusinessException(PARAMS_ERROR);
+//        }
+//        // 鉴权: 只有系统管理员和部门经理可以注册新员工
 //        if (!(employeeService.isAdmin(request) || employeeService.isManager(request))) {
 //            throw new BusinessException(ErrorCode.NO_AUTH, "只有系统管理员和部门经理可以注册新员工");
 //        }
-        String account = employeeRegisterRequest.getEmployeeAccount();
-        String password = employeeRegisterRequest.getEmployeePassword();
-        String checkPassword = employeeRegisterRequest.getCheckPassword();
-        // 非空验证
-        if (StringUtils.isAnyBlank(account, password, checkPassword)) {
-            throw new BusinessException(NULL_ERROR);
+//        String account = employeeRegisterRequest.getEmployeeAccount();
+//        String password = employeeRegisterRequest.getEmployeePassword();
+//        String checkPassword = employeeRegisterRequest.getCheckPassword();
+//        // 非空验证
+//        if (StringUtils.isAnyBlank(account, password, checkPassword)) {
+//            throw new BusinessException(NULL_ERROR);
+//        }
+//        long result = employeeService.employeeRegister(account, password, checkPassword);
+//        return ResultUtils.success(result);
+//    }
+
+    /**
+     * 添加新员工
+     */
+    @PostMapping("/add")
+    public BaseResponse<Long> addEmployee(@RequestBody Employee employee, HttpServletRequest request) {
+        if (!employeeService.isAdmin(request)) {
+            throw new BusinessException(NO_AUTH);
         }
-        long result = employeeService.employeeRegister(account, password, checkPassword);
+        long result = employeeService.addEmployee(employee,request);
         return ResultUtils.success(result);
     }
 
@@ -203,7 +211,7 @@ public class EmployeeController {
      */
     @PostMapping("/delete/{employeeId}")
     public BaseResponse<Boolean> deleteEmployee(@PathVariable Integer employeeId, HttpServletRequest request) {
-        if (!employeeService.isValid(employeeId,request)){
+        if (!employeeService.isValid(employeeId, request)) {
             return ResultUtils.success(false);
         }
         // 只有系统管理员和部门经理可以删除其他员工信息
@@ -219,7 +227,7 @@ public class EmployeeController {
      */
     @PutMapping("/resetPassword/{employeeId}")
     public BaseResponse<Boolean> resetPassword(@PathVariable Integer employeeId, HttpServletRequest request) {
-        if (!employeeService.isValid(employeeId,request)){
+        if (!employeeService.isValid(employeeId, request)) {
             return ResultUtils.success(false);
         }
         // 只有管理员和部门经理可以重置密码
