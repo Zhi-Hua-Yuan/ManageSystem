@@ -36,6 +36,11 @@ public interface EmployeeService extends IService<Employee> {
      */
     int addEmployee(Employee employee, HttpServletRequest request);
 
+//    /**
+//     * 修改员工信息
+//     */
+//    Employee updateEmployee(Employee newEmployee, HttpServletRequest request);
+
     /**
      * 员工信息脱敏
      */
@@ -65,4 +70,5 @@ public interface EmployeeService extends IService<Employee> {
      * 参数是否合法
      */
     boolean isValid(int employeeId, HttpServletRequest request);
+
 }

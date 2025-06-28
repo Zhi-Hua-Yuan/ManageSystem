@@ -186,7 +186,7 @@ public class EmployeeController {
      * 修改员工信息
      */
     @PutMapping("/update")
-    public BaseResponse<Boolean> updateEmployee(@RequestBody Employee newEmployee, HttpServletRequest request) {
+    public BaseResponse<Employee> updateEmployee(@RequestBody Employee newEmployee, HttpServletRequest request) {
         if (newEmployee == null || newEmployee.getEmployeeId() <= 0) {
             throw new BusinessException(PARAMS_ERROR);
         }
@@ -201,9 +201,11 @@ public class EmployeeController {
                 !(employeeService.isAdmin(request) || employeeService.isManager(request))) {
             throw new BusinessException(NO_AUTH);
         }
-
         boolean result = employeeService.updateById(newEmployee);
-        return ResultUtils.success(result);
+        if (!result){
+            throw new BusinessException(SYSTEM_ERROR,"数据更新失败");
+        }
+        return ResultUtils.success(employeeService.getSafetyEmployee(employeeService.getById(newEmployee.getEmployeeId())));
     }
 
     /**

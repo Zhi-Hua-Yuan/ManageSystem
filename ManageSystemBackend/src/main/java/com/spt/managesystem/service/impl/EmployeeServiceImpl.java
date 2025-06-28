@@ -158,6 +158,14 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee>
         return employeeId;
     }
 
+//    /**
+//     * 修改员工信息
+//     */
+//    @Override
+//    public Employee updateEmployee(Employee newEmployee, HttpServletRequest request) {
+//
+//    }
+
     /**
      * 分页查询用户信息
      */
