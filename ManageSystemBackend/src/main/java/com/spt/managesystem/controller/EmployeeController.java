@@ -249,4 +249,44 @@ public class EmployeeController {
         return ResultUtils.success(true);
     }
 
+    /**
+     * 员工修改密码
+     */
+    @PutMapping("/changePassword")
+    public BaseResponse<Boolean> changePassword(@RequestParam String oldPassword,
+                                                @RequestParam String newPassword,
+                                                @RequestParam String confirmPassword,
+                                                HttpServletRequest request) {
+        if (StringUtils.isAnyBlank(oldPassword, newPassword)) {
+            throw new BusinessException(NULL_ERROR, "旧密码和新密码不能为空");
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            throw new BusinessException(PARAMS_ERROR, "新密码和确认密码不一致");
+        }
+
+        Employee employee = employeeService.getLoginEmployee(request);
+        if (employee == null) {
+            throw new BusinessException(NOT_LOGIN);
+        }
+
+        // 先根据员工ID查找到该员工的密码
+        // 然后将查找到的密码与oldPassword进行比对
+        Employee currentEmployee = employeeService.getById(employee.getEmployeeId());
+
+        // 员工自己修改密码，需要验证旧密码是否正确
+        if (!BCrypt.checkpw(oldPassword, currentEmployee.getEmployeePassword())) {
+            throw new BusinessException(PARAMS_ERROR, "旧密码不正确");
+        }
+
+        // 更新密码
+        employee.setEmployeePassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
+        boolean result = employeeService.updateById(employee);
+        if (!result) {
+            throw new BusinessException(SYSTEM_ERROR, "密码更新失败");
+        }
+
+        return ResultUtils.success(true);
+    }
+
 }

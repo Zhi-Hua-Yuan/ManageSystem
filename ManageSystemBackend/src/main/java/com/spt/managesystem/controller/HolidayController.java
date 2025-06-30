@@ -8,6 +8,7 @@ import com.spt.managesystem.common.ResultUtils;
 import com.spt.managesystem.exception.BusinessException;
 import com.spt.managesystem.model.Employee;
 import com.spt.managesystem.model.Holiday;
+import com.spt.managesystem.model.Holiday;
 import com.spt.managesystem.model.request.ApproveHolidayRequest;
 import com.spt.managesystem.service.EmployeeService;
 import com.spt.managesystem.service.HolidayService;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -52,11 +55,68 @@ public class HolidayController {
      * @param holidayId
      * @return
      */
-    @GetMapping("/details/{holidayId}")
+    @GetMapping("/{holidayId}")
     public BaseResponse<Holiday> getHolidayDetails(@PathVariable Integer holidayId) {
         Holiday holiday = holidayService.getById(holidayId);
         return ResultUtils.success(holiday);
     }
+
+    /**
+     * 条件分页查询自己所有的加班记录
+     */
+    @GetMapping("/current")
+    public BaseResponse<Page<Holiday>> getCurrentHoliday(
+            @RequestParam int pageNum,
+            @RequestParam int pageSize,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer isApprove,
+            @RequestParam(required = false) Integer isPass,
+            HttpServletRequest request) throws ParseException {
+
+        // 登录用户校验
+        if (request.getSession().getAttribute("employeeLoginState") == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+
+        Employee loginEmployee = employeeService.getLoginEmployee(request);
+
+        // 构建查询条件
+        QueryWrapper<Holiday> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("holiday_emp_id", loginEmployee.getEmployeeId());
+
+        // 解析日期范围
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDateTime = null;
+        Date endDateTime = null;
+
+        if (startDate != null && !startDate.isEmpty()) {
+            startDateTime = sdf.parse(startDate);
+            queryWrapper.ge("holiday_date", startDateTime); // 大于等于开始日期
+        }
+
+        if (endDate != null && !endDate.isEmpty()) {
+            endDateTime = sdf.parse(endDate);
+            queryWrapper.le("holiday_date", endDateTime); // 小于等于结束日期
+        }
+
+        // 是否审批
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
+        }
+
+        // 是否通过
+        if (isPass != null) {
+            queryWrapper.eq("is_pass", isPass);
+        }
+
+        // 分页查询
+        Page<Holiday> page = new Page<>(pageNum, pageSize);
+        Page<Holiday> resultPage = holidayService.page(page, queryWrapper);
+
+        return ResultUtils.success(resultPage);
+    }
+
 
     /**
      * 条件分页查询请假申请列表
@@ -82,6 +142,7 @@ public class HolidayController {
             @RequestParam(required = false) String holidayDeptName,
             @RequestParam(required = false) Date holidayDate,
             @RequestParam(required = false) Integer isPass,
+            @RequestParam(required = false) Integer isApprove,
             @RequestParam(required = false) Date createTime,
             @RequestParam(required = false) Date updateTime,
             HttpServletRequest request) {
@@ -111,6 +172,10 @@ public class HolidayController {
 
         if (isPass != null) {
             queryWrapper.eq("is_pass", isPass);
+        }
+
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
         }
 
         if (createTime != null) {
