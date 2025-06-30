@@ -7,6 +7,7 @@ import com.spt.managesystem.common.ErrorCode;
 import com.spt.managesystem.common.ResultUtils;
 import com.spt.managesystem.exception.BusinessException;
 import com.spt.managesystem.model.Employee;
+import com.spt.managesystem.model.Overtime;
 import com.spt.managesystem.model.Trip;
 import com.spt.managesystem.model.request.ApproveTripRequest;
 import com.spt.managesystem.service.EmployeeService;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -52,10 +55,66 @@ public class TripController {
      * @param tripId
      * @return
      */
-    @GetMapping("/details/{tripId}")
+    @GetMapping("/{tripId}")
     public BaseResponse<Trip> getTripDetails(@PathVariable Integer tripId) {
         Trip trip = tripService.getById(tripId);
         return ResultUtils.success(trip);
+    }
+
+    /**
+     * 条件分页查询自己所有的出差记录
+     */
+    @GetMapping("/current")
+    public BaseResponse<Page<Trip>> getCurrentTrip(
+            @RequestParam int pageNum,
+            @RequestParam int pageSize,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer isApprove,
+            @RequestParam(required = false) Integer isPass,
+            HttpServletRequest request) throws ParseException {
+
+        // 登录用户校验
+        if (request.getSession().getAttribute("employeeLoginState") == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+
+        Employee loginEmployee = employeeService.getLoginEmployee(request);
+
+        // 构建查询条件
+        QueryWrapper<Trip> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("trip_emp_id", loginEmployee.getEmployeeId());
+
+        // 解析日期范围
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDateTime = null;
+        Date endDateTime = null;
+
+        if (startDate != null && !startDate.isEmpty()) {
+            startDateTime = sdf.parse(startDate);
+            queryWrapper.ge("trip_date", startDateTime); // 大于等于开始日期
+        }
+
+        if (endDate != null && !endDate.isEmpty()) {
+            endDateTime = sdf.parse(endDate);
+            queryWrapper.le("trip_date", endDateTime); // 小于等于结束日期
+        }
+
+        // 是否审批
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
+        }
+
+        // 是否通过
+        if (isPass != null) {
+            queryWrapper.eq("is_pass", isPass);
+        }
+
+        // 分页查询
+        Page<Trip> page = new Page<>(pageNum, pageSize);
+        Page<Trip> resultPage = tripService.page(page, queryWrapper);
+
+        return ResultUtils.success(resultPage);
     }
 
     /**
@@ -82,6 +141,7 @@ public class TripController {
             @RequestParam(required = false) String tripDeptName,
             @RequestParam(required = false) Date tripDate,
             @RequestParam(required = false) Integer isPass,
+            @RequestParam(required = false) Integer isApprove,
             @RequestParam(required = false) Date createTime,
             @RequestParam(required = false) Date updateTime,
             HttpServletRequest request) {
@@ -111,6 +171,10 @@ public class TripController {
 
         if (isPass != null) {
             queryWrapper.eq("is_pass", isPass);
+        }
+
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
         }
 
         if (createTime != null) {
