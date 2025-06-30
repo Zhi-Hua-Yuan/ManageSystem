@@ -147,7 +147,7 @@ public class EmployeeController {
     }
 
     /**
-     * 条件查询用户信息（支持按工号、姓名、部门查询）
+     * 条件查询用户信息（支持按工号、姓名查询）
      */
     @GetMapping("/search/tags")
     public BaseResponse<List<Employee>> searchEmployeesByCondition(

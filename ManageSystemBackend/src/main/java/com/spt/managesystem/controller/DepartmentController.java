@@ -114,7 +114,7 @@ public class DepartmentController {
      * @param departmentId 部门ID
      * @return 部门详情
      */
-    @GetMapping("/details/{departmentId}")
+    @GetMapping("/{departmentId}")
     public BaseResponse<Department> getDepartmentDetails(@PathVariable Integer departmentId,
                                                          HttpServletRequest request) {
         // 所有登录用户都可以查看部门详情
