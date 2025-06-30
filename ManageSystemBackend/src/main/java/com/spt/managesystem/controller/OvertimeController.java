@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -38,11 +40,11 @@ public class OvertimeController {
      */
     @PostMapping("/add")
     public BaseResponse<Integer> addOvertime(@RequestBody Overtime overtime, HttpServletRequest request) {
-        // 只有登录用户可以查看加班记录
         if (request.getSession().getAttribute("employeeLoginState") == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
-        int result = overtimeService.addOvertime(overtime);
+        Employee loginEmployee = employeeService.getLoginEmployee(request);
+        int result = overtimeService.addOvertime(overtime,loginEmployee);
         return ResultUtils.success(result);
     }
 
@@ -52,11 +54,68 @@ public class OvertimeController {
      * @param overtimeId
      * @return
      */
-    @GetMapping("/details/{overtimeId}")
+    @GetMapping("/{overtimeId}")
     public BaseResponse<Overtime> getOvertimeDetails(@PathVariable Integer overtimeId) {
         Overtime overtime = overtimeService.getById(overtimeId);
         return ResultUtils.success(overtime);
     }
+
+    /**
+     * 条件分页查询自己所有的加班记录
+     */
+    @GetMapping("/current")
+    public BaseResponse<Page<Overtime>> getCurrentOvertime(
+            @RequestParam int pageNum,
+            @RequestParam int pageSize,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer isApprove,
+            @RequestParam(required = false) Integer isPass,
+            HttpServletRequest request) throws ParseException {
+
+        // 登录用户校验
+        if (request.getSession().getAttribute("employeeLoginState") == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+
+        Employee loginEmployee = employeeService.getLoginEmployee(request);
+
+        // 构建查询条件
+        QueryWrapper<Overtime> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("overtime_emp_id", loginEmployee.getEmployeeId());
+
+        // 解析日期范围
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDateTime = null;
+        Date endDateTime = null;
+
+        if (startDate != null && !startDate.isEmpty()) {
+            startDateTime = sdf.parse(startDate);
+            queryWrapper.ge("overtime_date", startDateTime); // 大于等于开始日期
+        }
+
+        if (endDate != null && !endDate.isEmpty()) {
+            endDateTime = sdf.parse(endDate);
+            queryWrapper.le("overtime_date", endDateTime); // 小于等于结束日期
+        }
+
+        // 是否审批
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
+        }
+
+        // 是否通过
+        if (isPass != null) {
+            queryWrapper.eq("is_pass", isPass);
+        }
+
+        // 分页查询
+        Page<Overtime> page = new Page<>(pageNum, pageSize);
+        Page<Overtime> resultPage = overtimeService.page(page, queryWrapper);
+
+        return ResultUtils.success(resultPage);
+    }
+
 
     /**
      * 条件分页查询加班申请列表
@@ -74,7 +133,7 @@ public class OvertimeController {
      * @return 分页后的加班记录
      */
     @GetMapping("/search")
-    public BaseResponse<Page<Overtime>> searchOvertimeApplications(
+    public BaseResponse<Page<Overtime>> searchOvertime(
             @RequestParam int pageNum,
             @RequestParam int pageSize,
             @RequestParam(required = false) Integer overtimeEmpId,
@@ -82,6 +141,7 @@ public class OvertimeController {
             @RequestParam(required = false) String overtimeDeptName,
             @RequestParam(required = false) Date overtimeDate,
             @RequestParam(required = false) Integer isPass,
+            @RequestParam(required = false) Integer isApprove,
             @RequestParam(required = false) Date createTime,
             @RequestParam(required = false) Date updateTime,
             HttpServletRequest request) {
@@ -111,6 +171,10 @@ public class OvertimeController {
 
         if (isPass != null) {
             queryWrapper.eq("is_pass", isPass);
+        }
+
+        if (isApprove != null) {
+            queryWrapper.eq("is_approve", isApprove);
         }
 
         if (createTime != null) {
